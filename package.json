@@ -1,0 +1,37 @@
+{
+  "name": "maushatar",
+  "version": "0.0.1",
+  "description": "Discord transcriber bot based on deepspeech",
+  "main": "index.js",
+  "dependencies": {
+    "deepspeech": "^0.7.4",
+    "discord.js": "^12.2.0",
+    "ffmpeg": "^0.0.4",
+    "fluent-ffmpeg": "^2.1.2",
+    "ts-node-dev": "^1.0.0-pre.49",
+    "tsc": "^1.20150623.0",
+    "typescript": "^3.9.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "tsc": "tsc",
+    "dev": "ts-node-dev --respawn --transpileOnly ./app/app.ts",
+    "build": "tsc",
+    "start": "node ./build/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tamius-han/maushatar.git"
+  },
+  "keywords": [
+    "discord",
+    "transcriber",
+    "deepspeech"
+  ],
+  "author": "Tamius Han",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tamius-han/maushatar/issues"
+  },
+  "homepage": "https://github.com/tamius-han/maushatar#readme"
+}
