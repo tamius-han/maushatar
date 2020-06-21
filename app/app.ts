@@ -8,7 +8,7 @@ ensureDirSync(env.voiceRecordingDir);
 
 // initiate discord client & command processor
 const client = new Discord.Client();
-const commandProcessor = new CommandProcessor();
+const commandProcessor = new CommandProcessor(client);
 
 client.once('ready', () => {
   console.log('Client ready.');
