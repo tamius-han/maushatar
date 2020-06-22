@@ -2,7 +2,7 @@
   "name": "maushatar",
   "version": "0.0.1",
   "description": "Discord transcriber bot based on deepspeech",
-  "main": "index.js",
+  "main": "app.js",
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
     "deepspeech": "^0.7.4",
