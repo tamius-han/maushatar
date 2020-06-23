@@ -1,5 +1,6 @@
 import * as Discord from 'discord.js';
 import Recorder from '../recorder/recorder';
+import env from '../env/env';
 
 export default class CommandProcessor {
   discordClient: Discord.Client;
@@ -33,7 +34,23 @@ rec start               start recording audio
   async processRecording(message: Discord.Message, options: string[]) {
     this.recorder = new Recorder(this.discordClient);
 
-    await this.recorder.connect(message)
+    message.channel.send(`Connecting to voice. dumping env variables:
+\`\`\`
+env:
+  enableRecording: ${env.enableRecording}
+  recordingFormat: ${env.recordingFormat}
+  enableStt:       ${env.enableSTT}
+  persistSttRec.:  ${env.persistSTTRecordings}
+  persistSttInter: ${env.persistSTTIntermediaries}
+  deepSpeechModel: ${env.deepspeechModelDir}
+
+paths:
+  recordings:      ${env.voiceRecordingDir}
+  STT recordings:  ${env.STTRecordingDir}
+\`\`\`
+    `);
+
+    await this.recorder.connect(message);
     this.recorder.startRecording(message);
   }
 }
