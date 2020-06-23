@@ -2,18 +2,30 @@ import * as Discord from 'discord.js';
 import * as fs from 'fs';
 import { ensureDirSync } from '../lib/fs-helpers';
 import env from '../env/env';
+import Transcriber from '../transcriber/transcriber';
+
+export interface RecordedFile {
+  directory: string,
+  name: string,
+  fullPath: string,
+  stream: any
+};
 
 export default class Recorder {
   discordClient: Discord.Client;
   voiceChannel?: Discord.VoiceChannel | null | undefined;
   connection?: Discord.VoiceConnection | null | undefined;
   receiver?: Discord.VoiceReceiver | null | undefined;
+  transcriber?: Transcriber;
+
+  messageSequence: number = 0;
 
   constructor(discordClient: Discord.Client) {
     this.discordClient = discordClient;
+    this.transcriber = new Transcriber();
   }
 
-  async createOutputStream(speaker: Discord.User) {
+  async createOutputStream(speaker: Discord.User): Promise<RecordedFile | undefined> {
     if (!this.voiceChannel) {
       console.warn(`[Recorder::createOutputStream] we are trying to create a file while not connected to a voice channel. This is fishy, so we'll not do it.`);
       return;
@@ -31,7 +43,13 @@ export default class Recorder {
     ensureDirSync(fullDirectory);
 
     const filename = `${this.voiceChannel.id}-${speaker.id}-${Date.now()}.pcm`;
-    return fs.createWriteStream(`${fullDirectory}/${filename}`);
+    const fullPath = `${fullDirectory}/${filename}`;
+    return {
+      directory: fullDirectory,
+      name: filename,
+      fullPath: fullPath,
+      stream: fs.createWriteStream(fullPath)
+    };
   }
 
   async connect(message: Discord.Message) {
@@ -68,12 +86,17 @@ export default class Recorder {
       if (speaking) {
         message.channel.send(`User ${user.username} is speaking!`);
 
-        const audioStream = this.receiver?.createStream(user);
+        const audioStream = this.receiver?.createStream(user, {mode: 'pcm'});
         const outputFile = await this.createOutputStream(user);
 
-        audioStream.pipe(outputFile);
+        if (!outputFile) {
+          message.channel.send(`Cannot create file!`);
+          return;
+        }
 
-        outputFile.on('data', console.log);
+        audioStream.pipe(outputFile.stream);
+
+        outputFile?.stream.on('data', console.log);
         audioStream.on('end', () => {
           this.processSpeech(message, user);
         });
