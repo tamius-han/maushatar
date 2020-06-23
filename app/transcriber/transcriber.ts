@@ -2,6 +2,7 @@ import {Model} from 'deepspeech';
 import * as fs from 'fs';
 import FfmpegCommand from 'fluent-ffmpeg';
 import * as shelljs from 'shelljs';
+import env from '../env/env';
 
 export interface Transcription {
 
@@ -12,7 +13,9 @@ export default class Transcriber {
   userModels: {[userId: string]: Model};
 
   constructor() {
-    this.defaultModel = new Model(env.modelDir);
+    // TODO: if there's ever multiple types of transcription, we need to check what STT method
+    // is set in env.enableSTT as this is not simply a true/false value.
+    this.defaultModel = new Model(env.deepspeechModelDir);
     this.userModels = {};
   }
 

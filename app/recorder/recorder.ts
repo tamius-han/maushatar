@@ -1,6 +1,6 @@
 import * as Discord from 'discord.js';
 import * as fs from 'fs';
-import { ensureDirSync } from '../lib/fs-helpers';
+import { ensureDirSync, rm } from '../lib/fs-helpers';
 import env from '../env/env';
 import Transcriber from '../transcriber/transcriber';
 
@@ -25,7 +25,7 @@ export default class Recorder {
     this.transcriber = new Transcriber();
   }
 
-  async createOutputStream(speaker: Discord.User): Promise<RecordedFile | undefined> {
+  async createOutputStreams(speaker: Discord.User, mode: 'opus' | 'pcm'): Promise<{recording?: RecordedFile, sttRecording?: RecordedFile} | undefined> {
     if (!this.voiceChannel) {
       console.warn(`[Recorder::createOutputStream] we are trying to create a file while not connected to a voice channel. This is fishy, so we'll not do it.`);
       return;
@@ -39,16 +39,44 @@ export default class Recorder {
     // new directory for every hour, everything else is pointless
     const hourDir = dateTimeStr.split('T')[1].split(':')[0];
 
-    const fullDirectory = `${env.voiceRecordingDir}/${dateDir}/${hourDir}`;
-    ensureDirSync(fullDirectory);
+    // make the filename
+    const filenameBase = `${this.voiceChannel.id}-${speaker.id}-${Date.now()}`;
 
-    const filename = `${this.voiceChannel.id}-${speaker.id}-${Date.now()}.pcm`;
-    const fullPath = `${fullDirectory}/${filename}`;
+    let recording;
+    let sttRecording;
+
+    if (env.enableRecording) {    
+      const filename = `${filenameBase}.${mode}`;
+      const fullDirectory = `${env.voiceRecordingDir}/${dateDir}/${hourDir}`;
+      const fullPath = `${fullDirectory}/${filename}`;
+
+      ensureDirSync(fullDirectory);
+      recording = {
+        directory: fullDirectory,
+        name: filename,
+        fullPath: fullPath,
+        stream: fs.createWriteStream(fullPath)
+      }
+    }
+    
+    if (env.enableSTT) {
+      const sttFilename = `${filenameBase}.pcm`;
+      const sttFullDirectory = `${env.STTRecordingDir}/${dateDir}/${hourDir}`;
+      const sttFullPath =  `${sttFullDirectory}/${sttFilename}`;
+
+      ensureDirSync(sttFullDirectory);
+
+      sttRecording = {
+        directory: sttFullDirectory,
+        name: sttFilename,
+        fullPath: sttFullPath,
+        stream: fs.createWriteStream(sttFullPath)
+      }
+    }
+
     return {
-      directory: fullDirectory,
-      name: filename,
-      fullPath: fullPath,
-      stream: fs.createWriteStream(fullPath)
+      recording,
+      sttRecording
     };
   }
 
@@ -80,38 +108,91 @@ export default class Recorder {
 
     this.discordClient.on('guildMemberSpeaking', this.handleVocalMessage); 
 
-
     this.connection?.on('speaking', async (user, speaking) => {
-      console.log('speaking happened!')
       if (speaking) {
         message.channel.send(`User ${user.username} is speaking!`);
 
-        const audioStream = this.receiver?.createStream(user, {mode: 'pcm'});
-        const outputFile = await this.createOutputStream(user);
+        const outputFiles = await this.createOutputStreams(user, env.recordingFormat as 'opus' | 'pcm');
 
-        if (!outputFile) {
+        if (!outputFiles) {
           message.channel.send(`Cannot create file!`);
           return;
         }
 
-        audioStream.pipe(outputFile.stream);
+        message.channel.send(`
+\`\`\`
+do we have receiver?      ${!!this.receiver}
+outputFiles.recording?    ${outputFiles.recording?.fullPath}
+outputFiles.sttRecording? ${outputFiles.sttRecording?.fullPath}
+\`\`\`
+        `)
 
-        outputFile?.stream.on('data', console.log);
-        audioStream.on('end', () => {
-          this.processSpeech(message, user, outputFile);
-        });
+        if (env.enableRecording && outputFiles.recording) {
+          try {
+            console.info('Starting recording stream!')
+            const audioStream = await this.receiver?.createStream(user, {mode: env.recordingFormat as 'opus' | 'pcm'});
+            if (!audioStream) {
+              throw new Error('Failed to create audio stream!');
+            }
+            audioStream.pipe(outputFiles.recording.stream);
+            // outputFiles.recording.stream.on('data', console.log);
+            audioStream.on('end', () => {
+              this.onRecordingEnded(message, user, outputFiles.recording as RecordedFile);
+            });
+          } catch (e) {
+            console.error('Failed to create or write to recording stream', e);
+          }
+        }
+
+        if (env.enableSTT && outputFiles.sttRecording) {
+          try {
+            console.info('Starting stt stream!')
+            const audioStream = await this.receiver?.createStream(user, {mode: 'pcm'});
+            if (!audioStream) {
+              throw new Error('Failed to create audio stream!');
+            }
+            audioStream.pipe(outputFiles.sttRecording.stream);
+            // outputFiles.sttRecording.stream.on('data', console.log);
+            audioStream.on('end', () => {
+              console.log('stream ended!')
+              this.processSpeech(message, user, outputFiles.sttRecording as RecordedFile);
+            });
+          } catch (e) {
+            console.error('STT failed.', e);
+          }
+        }
       }
     });
   }
 
+  async onRecordingEnded(message: Discord.Message, user: Discord.User, outputFile: RecordedFile) {
+    // Discord has a problem where it'll make two recordings: one with actual data and one empty one
+    // We don't process empty recordings & delete them to avoid clogging our filesystem
+    const fileStats = fs.statSync(outputFile.fullPath);
+    if (fileStats.size === 0) {
+      rm(outputFile.fullPath);
+      return;
+    }
+
+    console.info(`Ended recording for ${user.username}`);
+  }
+
   async processSpeech(message: Discord.Message, user: Discord.User, outputFile: RecordedFile) {
+    console.info('Ended STT recording');
+    // TODO: if there's ever multiple types of transcription, we need to check what STT method
+    // is set in env.enableSTT as this is not simply a true/false value.
+
     // let's label the message we're currently processing
     const messageSequence = this.messageSequence++;
 
+    // Discord has a problem where it'll make two recordings: one with actual data and one empty one
+    // We don't process empty recordings & delete them to avoid clogging our filesystem
     const fileStats = fs.statSync(outputFile.fullPath);
     if (fileStats.size === 0) {
+      rm(outputFile.fullPath);
       return;
     }
+
     message.channel.send(`
       [${messageSequence}] User ${user.username} stopped speaking — attempting to transcribe speech.
       File stats:
@@ -126,7 +207,7 @@ Size: ${fileStats.size / 1000} kB
 
     message.channel.send(`
       [${messageSequence}] Transcription complete. ${user.username} said (period (.) marks the end of transcription):
-      > ${results?.result}.
+> ${results?.result}.
 ~~(Deepspeech technical details — sample rate: ${results?.sampleRate}, beam width: ${results?.beamWidth})~~
     `);
   };
