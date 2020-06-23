@@ -98,13 +98,36 @@ export default class Recorder {
 
         outputFile?.stream.on('data', console.log);
         audioStream.on('end', () => {
-          this.processSpeech(message, user);
+          this.processSpeech(message, user, outputFile);
         });
       }
     });
   }
 
-  async processSpeech(message: Discord.Message, user: Discord.User) {
-    message.channel.send(`User ${user.username} stopped speaking`);
+  async processSpeech(message: Discord.Message, user: Discord.User, outputFile: RecordedFile) {
+    // let's label the message we're currently processing
+    const messageSequence = this.messageSequence++;
+
+    const fileStats = fs.statSync(outputFile.fullPath);
+    if (fileStats.size === 0) {
+      return;
+    }
+    message.channel.send(`
+      [${messageSequence}] User ${user.username} stopped speaking — attempting to transcribe speech.
+      File stats:
+\`\`\`
+File: ${outputFile.name}
+Path: ${outputFile.fullPath}
+Size: ${fileStats.size / 1000} kB
+\`\`\`
+    `);
+
+    const results = await this.transcriber?.transcribe(outputFile?.fullPath);
+
+    message.channel.send(`
+      [${messageSequence}] Transcription complete. ${user.username} said (period (.) marks the end of transcription):
+      > ${results?.result}.
+~~(Deepspeech technical details — sample rate: ${results?.sampleRate}, beam width: ${results?.beamWidth})~~
+    `);
   };
 }
