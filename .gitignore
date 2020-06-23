@@ -103,6 +103,11 @@ dist
 # TernJS port file
 .tern-port
 
-app/env/
-
+# models for deepspeech
 deepspeech-models/
+
+# we're keeping .env files somewhere else
+# but we allow commits to example env file. Promise
+# we'll be careful when commiting.
+app/env/*
+!app/env/example.env.ts
