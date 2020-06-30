@@ -5,6 +5,8 @@ import CommandProcessor from './command-processor/command-processor';
 
 // prepare data directories
 ensureDirSync(env.voiceRecordingDir);
+ensureDirSync(env.STTRecordingDir);
+ensureDirSync(env.STTTmpDir);
 
 // initiate discord client & command processor
 const client = new Discord.Client();
