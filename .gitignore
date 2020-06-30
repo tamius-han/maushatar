@@ -111,3 +111,5 @@ deepspeech-models/
 # we'll be careful when commiting.
 app/env/*
 !app/env/example.env.ts
+
+julius/
