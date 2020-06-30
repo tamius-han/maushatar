@@ -18,6 +18,8 @@ export default class Recorder {
   receiver?: Discord.VoiceReceiver | null | undefined;
   transcriber?: Transcriber;
 
+  sttChannel?: Discord.TextChannel | null | undefined;
+
   messageSequence: number = 0;
 
   constructor(discordClient: Discord.Client) {
@@ -93,6 +95,15 @@ export default class Recorder {
 
     this.connection = await this.voiceChannel.join();
     this.receiver = this.connection.receiver;
+
+    // set stt channel (if any)
+    if (env.sttChannel === '') {
+      this.sttChannel = message.channel as Discord.TextChannel;
+    } else if (env.sttChannel.length) {
+      this.sttChannel = this.discordClient.channels.cache.find((x: any) => x.name === env.sttChannel) as Discord.TextChannel;
+      message.channel.send(`STT messages will be redirected to channel: ${env.sttChannel}, which ${!!this.sttChannel ? 'exists' : 'does not exist'}.`);
+      console.log(`STT messages will be redirected to channel: ${env.sttChannel}, which ${!!this.sttChannel ? 'exists' : 'does not exist'}.`);
+    }
 
     console.info('[Recorder::connect] connection established!');
 
@@ -193,7 +204,8 @@ outputFiles.sttRecording? ${outputFiles.sttRecording?.fullPath}
       return;
     }
 
-    message.channel.send(`
+    if (this.sttChannel) {
+      this.sttChannel.send(`
       [${messageSequence}] User ${user.username} stopped speaking — attempting to transcribe speech.
       File stats:
 \`\`\`
@@ -201,14 +213,23 @@ File: ${outputFile.name}
 Path: ${outputFile.fullPath}
 Size: ${fileStats.size / 1000} kB
 \`\`\`
-    `);
+      `);
+    }
 
     const results = await this.transcriber?.transcribe(outputFile?.fullPath);
 
-    message.channel.send(`
-      [${messageSequence}] Transcription complete. ${user.username} said (period (.) marks the end of transcription):
-> ${results?.result}.
-~~(Deepspeech technical details — sample rate: ${results?.sampleRate}, beam width: ${results?.beamWidth})~~
-    `);
+    if (this.sttChannel) {
+      if (results?.error) {
+        this.sttChannel.send(`[${messageSequence}] There was an error when processing ${user.username}'s speech:
+\`\`\`
+${results?.error}.
+\`\`\`
+        `);
+      } else {
+        this.sttChannel.send(`[${messageSequence}] ${user.username} said:
+          > ${results?.result}.
+        `);
+      }
+    }
   };
 }
