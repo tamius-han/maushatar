@@ -1,8 +1,12 @@
 {
   "cSpell.words": [
+    "Jconf",
     "deepspeech",
+    "dnnconf",
+    "filelist",
     "flac",
     "maushatar",
-    "pbmm"
+    "pbmm",
+    "rawfile"
   ]
 }
