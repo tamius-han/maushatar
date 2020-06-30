@@ -205,7 +205,8 @@ outputFiles.sttRecording? ${outputFiles.sttRecording?.fullPath}
     }
 
     if (this.sttChannel) {
-      this.sttChannel.send(`
+      // this.sttChannel.send(`
+      console.info(`
       [${messageSequence}] User ${user.username} stopped speaking — attempting to transcribe speech.
       File stats:
 \`\`\`
@@ -227,7 +228,8 @@ ${results?.error}.
         `);
       } else {
         this.sttChannel.send(`[${messageSequence}] ${user.username} said:
-          > ${results?.result}.
+          > ${results?.result}.${results?.firstPassBest !== undefined ? `
+~~\`First pass best: ${results.firstPassBest}\`~~` : ''}
         `);
       }
     }
