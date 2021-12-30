@@ -10,7 +10,7 @@
     "ffmpeg": "^0.0.4",
     "fluent-ffmpeg": "^2.1.2",
     "shelljs": "^0.8.4",
-    "ts-node-dev": "^1.0.0-pre.49",
+    "ts-node-dev": "^1.1.8",
     "tsc": "^1.20150623.0",
     "typescript": "^3.9.5"
   },
