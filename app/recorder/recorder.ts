@@ -27,60 +27,60 @@ export default class Recorder {
     this.transcriber = new Transcriber();
   }
 
-  async createOutputStreams(speaker: Discord.User, mode: 'opus' | 'pcm'): Promise<{recording?: RecordedFile, sttRecording?: RecordedFile} | undefined> {
-    if (!this.voiceChannel) {
-      console.warn(`[Recorder::createOutputStream] we are trying to create a file while not connected to a voice channel. This is fishy, so we'll not do it.`);
-      return;
-    }
-    const dateTimeStr = new Date().toISOString();
-    const dateStr = dateTimeStr.split('T')[0];
+  // async createOutputStreams(speaker: Discord.User, mode: 'opus' | 'pcm'): Promise<{recording?: RecordedFile, sttRecording?: RecordedFile} | undefined> {
+  //   if (!this.voiceChannel) {
+  //     console.warn(`[Recorder::createOutputStream] we are trying to create a file while not connected to a voice channel. This is fishy, so we'll not do it.`);
+  //     return;
+  //   }
+  //   const dateTimeStr = new Date().toISOString();
+  //   const dateStr = dateTimeStr.split('T')[0];
 
-    // date to directory
-    const dateDir = dateStr.replace(/-/g, '/');
+  //   // date to directory
+  //   const dateDir = dateStr.replace(/-/g, '/');
 
-    // new directory for every hour, everything else is pointless
-    const hourDir = dateTimeStr.split('T')[1].split(':')[0];
+  //   // new directory for every hour, everything else is pointless
+  //   const hourDir = dateTimeStr.split('T')[1].split(':')[0];
 
-    // make the filename
-    const filenameBase = `${this.voiceChannel.id}-${speaker.id}-${Date.now()}`;
+  //   // make the filename
+  //   const filenameBase = `${this.voiceChannel.id}-${speaker.id}-${Date.now()}`;
 
-    let recording;
-    let sttRecording;
+  //   let recording;
+  //   let sttRecording;
 
-    if (env.enableRecording) {    
-      const filename = `${filenameBase}.${mode}`;
-      const fullDirectory = `${env.voiceRecordingDir}/${dateDir}/${hourDir}`;
-      const fullPath = `${fullDirectory}/${filename}`;
+  //   if (env.enableRecording) {
+  //     const filename = `${filenameBase}.${mode}`;
+  //     const fullDirectory = `${env.voiceRecordingDir}/${dateDir}/${hourDir}`;
+  //     const fullPath = `${fullDirectory}/${filename}`;
 
-      ensureDirSync(fullDirectory);
-      recording = {
-        directory: fullDirectory,
-        name: filename,
-        fullPath: fullPath,
-        stream: fs.createWriteStream(fullPath)
-      }
-    }
-    
-    if (env.enableSTT) {
-      const sttFilename = `${filenameBase}.pcm`;
-      const sttFullDirectory = `${env.STTRecordingDir}/${dateDir}/${hourDir}`;
-      const sttFullPath =  `${sttFullDirectory}/${sttFilename}`;
+  //     ensureDirSync(fullDirectory);
+  //     recording = {
+  //       directory: fullDirectory,
+  //       name: filename,
+  //       fullPath: fullPath,
+  //       stream: fs.createWriteStream(fullPath)
+  //     }
+  //   }
 
-      ensureDirSync(sttFullDirectory);
+  //   if (env.enableSTT) {
+  //     const sttFilename = `${filenameBase}.pcm`;
+  //     const sttFullDirectory = `${env.STTRecordingDir}/${dateDir}/${hourDir}`;
+  //     const sttFullPath =  `${sttFullDirectory}/${sttFilename}`;
 
-      sttRecording = {
-        directory: sttFullDirectory,
-        name: sttFilename,
-        fullPath: sttFullPath,
-        stream: fs.createWriteStream(sttFullPath)
-      }
-    }
+  //     ensureDirSync(sttFullDirectory);
 
-    return {
-      recording,
-      sttRecording
-    };
-  }
+  //     sttRecording = {
+  //       directory: sttFullDirectory,
+  //       name: sttFilename,
+  //       fullPath: sttFullPath,
+  //       stream: fs.createWriteStream(sttFullPath)
+  //     }
+  //   }
+
+  //   return {
+  //     recording,
+  //     sttRecording
+  //   };
+  // }
 
   async connect(message: Discord.Message) {
     this.voiceChannel = message.member?.voice.channel;
@@ -97,141 +97,141 @@ export default class Recorder {
     this.receiver = this.connection.receiver;
 
     // set stt channel (if any)
-    if (env.sttChannel === '') {
-      this.sttChannel = message.channel as Discord.TextChannel;
-    } else if (env.sttChannel.length) {
-      this.sttChannel = this.discordClient.channels.cache.find((x: any) => x.name === env.sttChannel) as Discord.TextChannel;
-      message.channel.send(`STT messages will be redirected to channel: ${env.sttChannel}, which ${!!this.sttChannel ? 'exists' : 'does not exist'}.`);
-      console.log(`STT messages will be redirected to channel: ${env.sttChannel}, which ${!!this.sttChannel ? 'exists' : 'does not exist'}.`);
-    }
+    // if (env.sttChannel === '') {
+    //   this.sttChannel = message.channel as Discord.TextChannel;
+    // } else if (env.sttChannel.length) {
+    //   this.sttChannel = this.discordClient.channels.cache.find((x: any) => x.name === env.sttChannel) as Discord.TextChannel;
+    //   message.channel.send(`STT messages will be redirected to channel: ${env.sttChannel}, which ${!!this.sttChannel ? 'exists' : 'does not exist'}.`);
+    //   console.log(`STT messages will be redirected to channel: ${env.sttChannel}, which ${!!this.sttChannel ? 'exists' : 'does not exist'}.`);
+    // }
 
     console.info('[Recorder::connect] connection established!');
 
     this.connection.play('/media/Dragon/tmp/dnd-in-progress/23 - Shadow of War Theme.flac');
   }
 
-  handleVocalMessage(userOrMember: any, speaking: any){
-    console.log(userOrMember.displayName || userOrMember.username, "is talking?", speaking);
-  }
+//   handleVocalMessage(userOrMember: any, speaking: any){
+//     console.log(userOrMember.displayName || userOrMember.username, "is talking?", speaking);
+//   }
 
-  async startRecording(message: Discord.Message) {
-    console.log("start recording. Do we have connection:", !!this.connection);
+//   async startRecording(message: Discord.Message) {
+//     console.log("start recording. Do we have connection:", !!this.connection);
 
-    this.discordClient.on('guildMemberSpeaking', this.handleVocalMessage); 
+//     this.discordClient.on('guildMemberSpeaking', this.handleVocalMessage);
 
-    this.connection?.on('speaking', async (user, speaking) => {
-      if (speaking) {
-        message.channel.send(`User ${user.username} is speaking!`);
+//     this.connection?.on('speaking', async (user, speaking) => {
+//       if (speaking) {
+//         message.channel.send(`User ${user.username} is speaking!`);
 
-        const outputFiles = await this.createOutputStreams(user, env.recordingFormat as 'opus' | 'pcm');
+//         const outputFiles = await this.createOutputStreams(user, env.recordingFormat as 'opus' | 'pcm');
 
-        if (!outputFiles) {
-          message.channel.send(`Cannot create file!`);
-          return;
-        }
+//         if (!outputFiles) {
+//           message.channel.send(`Cannot create file!`);
+//           return;
+//         }
 
-        message.channel.send(`
-\`\`\`
-do we have receiver?      ${!!this.receiver}
-outputFiles.recording?    ${outputFiles.recording?.fullPath}
-outputFiles.sttRecording? ${outputFiles.sttRecording?.fullPath}
-\`\`\`
-        `)
+//         message.channel.send(`
+// \`\`\`
+// do we have receiver?      ${!!this.receiver}
+// outputFiles.recording?    ${outputFiles.recording?.fullPath}
+// outputFiles.sttRecording? ${outputFiles.sttRecording?.fullPath}
+// \`\`\`
+//         `)
 
-        if (env.enableRecording && outputFiles.recording) {
-          try {
-            console.info('Starting recording stream!')
-            const audioStream = await this.receiver?.createStream(user, {mode: env.recordingFormat as 'opus' | 'pcm'});
-            if (!audioStream) {
-              throw new Error('Failed to create audio stream!');
-            }
-            audioStream.pipe(outputFiles.recording.stream);
-            // outputFiles.recording.stream.on('data', console.log);
-            audioStream.on('end', () => {
-              this.onRecordingEnded(message, user, outputFiles.recording as RecordedFile);
-            });
-          } catch (e) {
-            console.error('Failed to create or write to recording stream', e);
-          }
-        }
+//         if (env.enableRecording && outputFiles.recording) {
+//           try {
+//             console.info('Starting recording stream!')
+//             const audioStream = await this.receiver?.createStream(user, {mode: env.recordingFormat as 'opus' | 'pcm'});
+//             if (!audioStream) {
+//               throw new Error('Failed to create audio stream!');
+//             }
+//             audioStream.pipe(outputFiles.recording.stream);
+//             // outputFiles.recording.stream.on('data', console.log);
+//             audioStream.on('end', () => {
+//               this.onRecordingEnded(message, user, outputFiles.recording as RecordedFile);
+//             });
+//           } catch (e) {
+//             console.error('Failed to create or write to recording stream', e);
+//           }
+//         }
 
-        if (env.enableSTT && outputFiles.sttRecording) {
-          try {
-            console.info('Starting stt stream!')
-            const audioStream = await this.receiver?.createStream(user, {mode: 'pcm'});
-            if (!audioStream) {
-              throw new Error('Failed to create audio stream!');
-            }
-            audioStream.pipe(outputFiles.sttRecording.stream);
-            // outputFiles.sttRecording.stream.on('data', console.log);
-            audioStream.on('end', () => {
-              console.log('stream ended!')
-              this.processSpeech(message, user, outputFiles.sttRecording as RecordedFile);
-            });
-          } catch (e) {
-            console.error('STT failed.', e);
-          }
-        }
-      }
-    });
-  }
+//         if (env.enableSTT && outputFiles.sttRecording) {
+//           try {
+//             console.info('Starting stt stream!')
+//             const audioStream = await this.receiver?.createStream(user, {mode: 'pcm'});
+//             if (!audioStream) {
+//               throw new Error('Failed to create audio stream!');
+//             }
+//             audioStream.pipe(outputFiles.sttRecording.stream);
+//             // outputFiles.sttRecording.stream.on('data', console.log);
+//             audioStream.on('end', () => {
+//               console.log('stream ended!')
+//               this.processSpeech(message, user, outputFiles.sttRecording as RecordedFile);
+//             });
+//           } catch (e) {
+//             console.error('STT failed.', e);
+//           }
+//         }
+//       }
+//     });
+//   }
 
-  async onRecordingEnded(message: Discord.Message, user: Discord.User, outputFile: RecordedFile) {
-    // Discord has a problem where it'll make two recordings: one with actual data and one empty one
-    // We don't process empty recordings & delete them to avoid clogging our filesystem
-    const fileStats = fs.statSync(outputFile.fullPath);
-    if (fileStats.size === 0) {
-      rm(outputFile.fullPath);
-      return;
-    }
+//   async onRecordingEnded(message: Discord.Message, user: Discord.User, outputFile: RecordedFile) {
+//     // Discord has a problem where it'll make two recordings: one with actual data and one empty one
+//     // We don't process empty recordings & delete them to avoid clogging our filesystem
+//     const fileStats = fs.statSync(outputFile.fullPath);
+//     if (fileStats.size === 0) {
+//       rm(outputFile.fullPath);
+//       return;
+//     }
 
-    console.info(`Ended recording for ${user.username}`);
-  }
+//     console.info(`Ended recording for ${user.username}`);
+//   }
 
-  async processSpeech(message: Discord.Message, user: Discord.User, outputFile: RecordedFile) {
-    console.info('Ended STT recording');
-    // TODO: if there's ever multiple types of transcription, we need to check what STT method
-    // is set in env.enableSTT as this is not simply a true/false value.
+//   async processSpeech(message: Discord.Message, user: Discord.User, outputFile: RecordedFile) {
+//     console.info('Ended STT recording');
+//     // TODO: if there's ever multiple types of transcription, we need to check what STT method
+//     // is set in env.enableSTT as this is not simply a true/false value.
 
-    // let's label the message we're currently processing
-    const messageSequence = this.messageSequence++;
+//     // let's label the message we're currently processing
+//     const messageSequence = this.messageSequence++;
 
-    // Discord has a problem where it'll make two recordings: one with actual data and one empty one
-    // We don't process empty recordings & delete them to avoid clogging our filesystem
-    const fileStats = fs.statSync(outputFile.fullPath);
-    if (fileStats.size === 0) {
-      rm(outputFile.fullPath);
-      return;
-    }
+//     // Discord has a problem where it'll make two recordings: one with actual data and one empty one
+//     // We don't process empty recordings & delete them to avoid clogging our filesystem
+//     const fileStats = fs.statSync(outputFile.fullPath);
+//     if (fileStats.size === 0) {
+//       rm(outputFile.fullPath);
+//       return;
+//     }
 
-    if (this.sttChannel) {
-      // this.sttChannel.send(`
-      console.info(`
-      [${messageSequence}] User ${user.username} stopped speaking — attempting to transcribe speech.
-      File stats:
-\`\`\`
-File: ${outputFile.name}
-Path: ${outputFile.fullPath}
-Size: ${fileStats.size / 1000} kB
-\`\`\`
-      `);
-    }
+//     if (this.sttChannel) {
+//       // this.sttChannel.send(`
+//       console.info(`
+//       [${messageSequence}] User ${user.username} stopped speaking — attempting to transcribe speech.
+//       File stats:
+// \`\`\`
+// File: ${outputFile.name}
+// Path: ${outputFile.fullPath}
+// Size: ${fileStats.size / 1000} kB
+// \`\`\`
+//       `);
+//     }
 
-    const results = await this.transcriber?.transcribe(outputFile?.fullPath);
+//     const results = await this.transcriber?.transcribe(outputFile?.fullPath);
 
-    if (this.sttChannel) {
-      if (results?.error) {
-        this.sttChannel.send(`[${messageSequence}] There was an error when processing ${user.username}'s speech:
-\`\`\`
-${results?.error}.
-\`\`\`
-        `);
-      } else {
-        this.sttChannel.send(`[${messageSequence}] ${user.username} said:
-          > ${results?.result}.${results?.firstPassBest !== undefined ? `
-~~\`First pass best: ${results.firstPassBest}\`~~` : ''}
-        `);
-      }
-    }
-  };
+//     if (this.sttChannel) {
+//       if (results?.error) {
+//         this.sttChannel.send(`[${messageSequence}] There was an error when processing ${user.username}'s speech:
+// \`\`\`
+// ${results?.error}.
+// \`\`\`
+//         `);
+//       } else {
+//         this.sttChannel.send(`[${messageSequence}] ${user.username} said:
+//           > ${results?.result}.${results?.firstPassBest !== undefined ? `
+// ~~\`First pass best: ${results.firstPassBest}\`~~` : ''}
+//         `);
+//       }
+//     }
+//   };
 }

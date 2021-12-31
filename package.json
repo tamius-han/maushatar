@@ -19,7 +19,7 @@
   },
   "scripts": {
     "tsc": "tsc",
-    "dev": "ts-node-dev --respawn --transpileOnly ./app/app.ts",
+    "dev": "ts-node-dev ./app/app.ts",
     "build": "tsc",
     "start": "node ./build/app.js"
   },
